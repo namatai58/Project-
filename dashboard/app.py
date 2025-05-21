@@ -6,7 +6,7 @@ import plotly.express as px
 from dotenv import load_dotenv
 from datetime import datetime
 
-#Load environment variables
+# Load environment variables
 load_dotenv()
 API_KEY = os.getenv("API_KEY", "Zimbabwe1980!@")
 API_URL = os.getenv("API_URL", "https://project-predictive-maintenance-api.onrender.com/predict")
@@ -89,11 +89,16 @@ if os.path.exists(LOG_FILE):
     common = logs['failure_name'].value_counts().idxmax()
     st.metric("Most Common Failure", common)
 
-    # Visualize class counts
-    fig = px.bar(logs['failure_name'].value_counts().reset_index(),
-                 x='index', y='failure_name',
-                 labels={'index': 'Failure Type', 'failure_name': 'Count'},
-                 title="Failure Type Distribution")
+    # Visualize class counts with correct column renaming
+    failure_counts = logs['failure_name'].value_counts().reset_index()
+    failure_counts.columns = ['Failure Type', 'Count']
+
+    fig = px.bar(
+        failure_counts,
+        x='Failure Type',
+        y='Count',
+        title="Failure Type Distribution"
+    )
     st.plotly_chart(fig)
 
     # Show raw log
