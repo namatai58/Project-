@@ -17,10 +17,11 @@ tool_wear = st.slider("Tool Wear [min]", 0, 250, 100)
 power = st.number_input("Power [W]", min_value=500.0, max_value=2000.0, value=1350.0)
 temp_diff = st.number_input("Temp Difference [K]", min_value=0.0, max_value=50.0, value=15.0)
 
+# Match labels to expected type encoding
 machine_type = st.radio("Machine Type", ["High", "Low", "Medium"])
-type_H = 1.0 if machine_type == "H" else 0.0
-type_L = 1.0 if machine_type == "L" else 0.0
-type_M = 1.0 if machine_type == "M" else 0.0
+type_H = 1.0 if machine_type == "High" else 0.0
+type_L = 1.0 if machine_type == "Low" else 0.0
+type_M = 1.0 if machine_type == "Medium" else 0.0
 
 input_data = {
     "ProcessTemp": process_temp,
@@ -36,12 +37,13 @@ input_data = {
 API_KEY = os.getenv("API_KEY", "your_secure_key_here")  # fallback for local dev
 headers = {"x-api-key": API_KEY}
 
+# Correct failure class mapping (integer keys!)
 failure_mapping = {
-    'No Failure': 0,
-    'Tool Wear / Random Failures': 1,
-    'Power Failure': 2,
-    'Overstrain Failure': 3,
-    'Heat Dissipation Failure': 4,
+    0: 'No Failure',
+    1: 'Tool Wear / Random Failures',
+    2: 'Power Failure',
+    3: 'Overstrain Failure',
+    4: 'Heat Dissipation Failure',
 }
 
 # Prediction request
@@ -54,7 +56,8 @@ if st.button("🚀 Predict Failure"):
         )
         if response.status_code == 200:
             result = response.json()
-            failure_class = result['predicted_failure']
+            # force string to int if necessary
+            failure_class = int(result['predicted_failure'])
             failure_name = failure_mapping.get(failure_class, "Unknown Failure")
             st.success(f"🧠 Predicted Failure: {failure_name}")
         else:
