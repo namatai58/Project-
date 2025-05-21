@@ -1,13 +1,13 @@
 import streamlit as st
-import streamlit as st
 import requests
+import os
 
+# Page settings
 st.set_page_config(page_title="Predictive Maintenance", layout="centered")
 st.title("🛠️ Predictive Maintenance Failure Classifier")
-
 st.markdown("Enter machine sensor readings below:")
 
-# Inputs
+# Input fields
 process_temp = st.number_input("Process Temperature [K]", min_value=300.0, max_value=400.0, value=340.0)
 tool_wear = st.slider("Tool Wear [min]", 0, 250, 100)
 power = st.number_input("Power [W]", min_value=500.0, max_value=2000.0, value=1350.0)
@@ -28,14 +28,22 @@ input_data = {
     "Type_M": type_M
 }
 
-# Prediction button
+# Load secure API key
+API_KEY = os.getenv("API_KEY", "your_secure_key_here")  # fallback for local dev
+headers = {"x-api-key": API_KEY}
+
+# Prediction request
 if st.button("🚀 Predict Failure"):
     try:
-        response = requests.post("http://127.0.0.1:8000/predict", json=input_data)
+        response = requests.post(
+            "https://project-predictive-maintenance-api.onrender.com/predict",
+            json=input_data,
+            headers=headers
+        )
         if response.status_code == 200:
-            result = response.json()["predicted_failure"]
+            result = response.json()
             st.success(f"🧠 Predicted Failure Class: {result['predicted_failure']}")
         else:
-            st.error("❌ Prediction failed. Check FastAPI server.")
+            st.error(f"❌ API Error {response.status_code}: {response.text}")
     except Exception as e:
-        st.error(f"❌ Error: {str(e)}")
+        st.error(f"❌ Request Failed: {str(e)}")
