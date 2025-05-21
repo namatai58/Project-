@@ -3,7 +3,7 @@ import requests
 import os
 from dotenv import load_dotenv
 
-# Load environment variables (useful for local development)
+# Load environment variables from .env (for local development)
 load_dotenv()
 
 # Page settings
@@ -17,12 +17,13 @@ tool_wear = st.slider("Tool Wear [min]", 0, 250, 100)
 power = st.number_input("Power [W]", min_value=500.0, max_value=2000.0, value=1350.0)
 temp_diff = st.number_input("Temp Difference [K]", min_value=0.0, max_value=50.0, value=15.0)
 
-# Match labels to expected type encoding
+# Machine type encoding
 machine_type = st.radio("Machine Type", ["High", "Low", "Medium"])
 type_H = 1.0 if machine_type == "High" else 0.0
 type_L = 1.0 if machine_type == "Low" else 0.0
 type_M = 1.0 if machine_type == "Medium" else 0.0
 
+# Assemble input
 input_data = {
     "ProcessTemp": process_temp,
     "ToolWear": tool_wear,
@@ -33,11 +34,12 @@ input_data = {
     "Type_M": type_M
 }
 
-# Load secure API key
-API_KEY = os.getenv("API_KEY", "your_secure_key_here")  # fallback for local dev
+# --- Secure API settings ---
+API_URL = os.getenv("API_URL", "https://project-predictive-maintenance-api.onrender.com/predict")
+API_KEY = os.getenv("API_KEY", "Zimbabwe1980!@")
 headers = {"x-api-key": API_KEY}
 
-# Correct failure class mapping (integer keys!)
+# Failure class mapping
 failure_mapping = {
     0: 'No Failure',
     1: 'Tool Wear / Random Failures',
@@ -46,18 +48,14 @@ failure_mapping = {
     4: 'Heat Dissipation Failure',
 }
 
-# Prediction request
+# --- Prediction ---
 if st.button("🚀 Predict Failure"):
     try:
-        response = requests.post(
-            "https://project-predictive-maintenance-api.onrender.com/predict",
-            json=input_data,
-            headers=headers
-        )
+        response = requests.post(API_URL, json=input_data, headers=headers)
+
         if response.status_code == 200:
             result = response.json()
-            # force string to int if necessary
-            failure_class = int(result['predicted_failure'])
+            failure_class = int(result.get('predicted_failure', -1))
             failure_name = failure_mapping.get(failure_class, "Unknown Failure")
             st.success(f"🧠 Predicted Failure: {failure_name}")
         else:
