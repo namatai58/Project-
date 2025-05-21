@@ -9,7 +9,7 @@ from datetime import datetime
 #Load environment variables
 load_dotenv()
 API_KEY = os.getenv("API_KEY", "Zimbabwe1980!@")
-API_URL = "https://project-predictive-maintenance-api.onrender.com/predict"
+API_URL = os.getenv("API_URL", "https://project-predictive-maintenance-api.onrender.com/predict")
 
 # File to log predictions
 LOG_FILE = "prediction_log.csv"

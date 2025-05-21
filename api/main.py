@@ -1,8 +1,8 @@
-# --- main.py (Improved FastAPI app) ---
+# --- main.py ---
 import os
 import json
 import logging
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -10,19 +10,21 @@ from app.model import load_model, predict_failure
 
 # Load environment variables
 load_dotenv()
-API_KEY = os.getenv("API_KEY", "1234")  # default fallback
+API_KEY = os.getenv("API_KEY", "Zimbabwe1980!@")
+API_URL="https://project-predictive-maintenance-api.onrender.com/predict"
 
-# Set up logging to a file
+# Configure logging
 logging.basicConfig(
     filename="api_requests.log",
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
+# Initialize app and model
 app = FastAPI()
 model = load_model()
 
-# Allow all CORS (can be restricted for production)
+# Allow CORS for external access (e.g., from Streamlit)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -31,7 +33,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Define expected input structure
+# Input schema
 class SensorData(BaseModel):
     ProcessTemp: float
     ToolWear: int
@@ -41,6 +43,20 @@ class SensorData(BaseModel):
     Type_L: float
     Type_M: float
 
+# Failure mapping
+failure_mapping = {
+    0: 'No Failure',
+    1: 'Tool Wear / Random Failures',
+    2: 'Power Failure',
+    3: 'Overstrain Failure',
+    4: 'Heat Dissipation Failure'
+}
+
+# Health check
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 # Root endpoint
 @app.get("/")
 def read_root():
@@ -49,27 +65,15 @@ def read_root():
 # Prediction endpoint
 @app.post("/predict")
 def predict(data: SensorData, request: Request):
-    input_dict = data.dict()
-
-    # Simple API key check
     if request.headers.get("x-api-key") != API_KEY:
-        return {"error": "❌ Invalid API Key"}
+        raise HTTPException(status_code=401, detail="❌ Invalid API Key")
 
     try:
-        # Failure label mapping
-        failure_mapping = {
-            0: 'No Failure',
-            1: 'Tool Wear / Random Failures',
-            2: 'Power Failure',
-            3: 'Overstrain Failure',
-            4: 'Heat Dissipation Failure'
-        }
+        input_dict = data.dict()
 
-        # Run prediction and decode
         prediction = int(predict_failure(model, input_dict))
         failure_name = failure_mapping.get(prediction, "Unknown Failure")
 
-        # Log entry
         log_entry = {
             "client": request.client.host,
             "input": input_dict,
@@ -84,5 +88,5 @@ def predict(data: SensorData, request: Request):
         }
 
     except Exception as e:
-        logging.error(f"Prediction error: {str(e)}")
+        logging.exception("Prediction error")
         return {"error": f"❌ Prediction failed: {str(e)}"}
