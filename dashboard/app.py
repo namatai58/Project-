@@ -33,10 +33,9 @@ if st.button("🚀 Predict Failure"):
     try:
         response = requests.post("http://127.0.0.1:8000/predict", json=input_data)
         if response.status_code == 200:
-            result = response.json()
+            result = response.json()["predicted_failure"]
             st.success(f"🧠 Predicted Failure Class: {result['predicted_failure']}")
         else:
             st.error("❌ Prediction failed. Check FastAPI server.")
     except Exception as e:
         st.error(f"❌ Error: {str(e)}")
-
